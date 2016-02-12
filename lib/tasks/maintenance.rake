@@ -19,7 +19,8 @@ namespace :maintenance do
 
     maint_file = maintenance_file_for(task)
 
-    if maint_file.delete
+    if maint_file.exists?
+      maint_file.delete
       puts "Deleted #{maint_file.path}"
     else
       fail 'Could not find a maintenance file to delete'

@@ -20,7 +20,7 @@ module Turnout
     end
 
     def exists?
-      File.exists? path
+      maint_file.exists?
     end
 
     def to_h
@@ -36,15 +36,11 @@ module Turnout
     end
 
     def write
-      FileUtils.mkdir_p(dir_path) unless Dir.exists? dir_path
-
-      File.open(path, 'w') do |file|
-        file.write to_yaml
-      end
+      maint_file.write to_yaml
     end
 
     def delete
-      File.delete(path) if exists?
+      maint_file.delete
     end
 
     def import(hash)
@@ -58,7 +54,7 @@ module Turnout
 
     # Find the first MaintenanceFile that exists
     def self.find
-      path = named_paths.values.find { |path| File.exists? path }
+      path = named_paths.values.find { |path| maint_file(path).exists? }
       self.new(path) if path
     end
 
@@ -109,11 +105,19 @@ module Turnout
     end
 
     def import_yaml
-      import YAML::load(File.open(path)) || {}
+      import YAML::load(maint_file.read) || {}
+    end
+
+    def maint_file
+      AWS::S3.new.buckets[Turnout.config.bucket].objects[path]
     end
 
     def self.named_paths
       Turnout.config.named_maintenance_file_paths
+    end
+
+    def self.maint_file(path)
+      AWS::S3.new.buckets[Turnout.config.bucket].objects[path]
     end
   end
 end
